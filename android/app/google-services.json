@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "464605127931",
+    "project_id": "nutrisight-77e3c",
+    "storage_bucket": "nutrisight-77e3c.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:464605127931:android:4e4e822c8ccd6d83cd7c5e",
+        "android_client_info": {
+          "package_name": "com.example.nutrisight"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyAkEUU258QvT8Kko14z2RxjaZw_q4IE3N0"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
