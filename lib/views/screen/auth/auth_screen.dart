@@ -5,6 +5,7 @@ import 'package:flutter_svg/flutter_svg.dart';
 import 'login_screen.dart';
 import 'register_screen.dart';
 import '../home_screen.dart';
+import '../../../main_layout.dart';
 
 class AuthScreen extends StatelessWidget {
   AuthScreen({super.key});
@@ -31,7 +32,7 @@ class AuthScreen extends StatelessWidget {
       if (userCredential.user != null && context.mounted) {
         Navigator.pushReplacement(
           context,
-          MaterialPageRoute(builder: (context) => const HomeScreen()),
+          MaterialPageRoute(builder: (context) => const MainLayout()),
         );
       }
     } catch (e) {
