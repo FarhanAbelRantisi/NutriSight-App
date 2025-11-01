@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:nutrisight/views/screen/scanner/scan_screen.dart';
 import 'views/screen/home_screen.dart';
 
 class MainLayout extends StatefulWidget {
@@ -19,9 +20,16 @@ class _MainLayoutState extends State<MainLayout> {
   ];
 
   void _onItemTapped(int index) {
-    setState(() {
-      _selectedIndex = index;
-    });
+    if (index == 1) {
+      Navigator.push(
+        context,
+        MaterialPageRoute(builder: (context) => const ScanScreen()),
+      );
+    } else {
+      setState(() {
+        _selectedIndex = index;
+      });
+    }
   }
 
   @override
