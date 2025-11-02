@@ -3,7 +3,7 @@ import 'package:camera/camera.dart';
 import 'package:image_picker/image_picker.dart';
 import 'dart:io'; // Untuk File
 // --- 1. IMPORT HALAMAN BARU ---
-import 'detail_scan_screen.dart';
+import 'scan_detail_screen.dart';
 
 class ScanScreen extends StatefulWidget {
   const ScanScreen({super.key});
@@ -118,7 +118,7 @@ class _ScanScreenState extends State<ScanScreen> with WidgetsBindingObserver {
         context,
         MaterialPageRoute(
           // Buka halaman detail, kirim file gambarnya
-          builder: (context) => DetailScanScreen(imageFile: imageFile),
+          builder: (context) => ScanDetailScreen(imageFile: imageFile),
         ),
       );
       // --- AKHIR PERUBAHAN ---
@@ -141,7 +141,7 @@ class _ScanScreenState extends State<ScanScreen> with WidgetsBindingObserver {
         context,
         MaterialPageRoute(
           // Buka halaman detail, kirim file gambarnya
-          builder: (context) => DetailScanScreen(imageFile: imageFile),
+          builder: (context) => ScanDetailScreen(imageFile: imageFile),
         ),
       );
       // --- AKHIR PERUBAHAN ---

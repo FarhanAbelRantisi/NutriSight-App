@@ -2,22 +2,22 @@ import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
 import 'dart:io';
 import 'dart:async';
-import 'result_scan_screen.dart';
+import 'scan_result_screen.dart';
 import 'package:dio/dio.dart';
 import 'package:image/image.dart' as img;
 import 'package:path/path.dart' as p;
 import 'package:path_provider/path_provider.dart';
 import 'package:flutter_image_compress/flutter_image_compress.dart';
 
-class DetailScanScreen extends StatefulWidget {
+class ScanDetailScreen extends StatefulWidget {
   final XFile imageFile;
-  const DetailScanScreen({super.key, required this.imageFile});
+  const ScanDetailScreen({super.key, required this.imageFile});
 
   @override
-  State<DetailScanScreen> createState() => _DetailScanScreenState();
+  State<ScanDetailScreen> createState() => _ScanDetailScreenState();
 }
 
-class _DetailScanScreenState extends State<DetailScanScreen> {
+class _ScanDetailScreenState extends State<ScanDetailScreen> {
   final String _apiUrl = "https://nutrition-api-464605127931.asia-southeast2.run.app/classify-image-graded";
   final Dio _dio = Dio();
 
@@ -178,7 +178,7 @@ class _DetailScanScreenState extends State<DetailScanScreen> {
       Navigator.pushReplacement(
         context,
         MaterialPageRoute(
-          builder: (context) => ResultScanScreen(
+          builder: (context) => ScanResultScreen(
             imageFile: XFile(_permanentImagePath),
             categoryName: categoryName,
             scanResult: responseData,
@@ -253,7 +253,7 @@ class _DetailScanScreenState extends State<DetailScanScreen> {
                 children: [
                   CircularProgressIndicator(),
                   SizedBox(height: 16),
-                  Text("Mempersiapkan gambar..."),
+                  Text("Preparing image..."),
                 ],
               ),
             )
@@ -262,7 +262,7 @@ class _DetailScanScreenState extends State<DetailScanScreen> {
               child: Column(
                 children: [
                   Text(
-                    "Periksa kembali foto dan pilih kategori produk:",
+                    "Double check the photos and select the product category:",
                     style: TextStyle(fontSize: 15, color: Colors.grey[700]),
                   ),
                   const SizedBox(height: 16),
@@ -284,7 +284,7 @@ class _DetailScanScreenState extends State<DetailScanScreen> {
 
                   DropdownButtonFormField<String>(
                     value: _selectedCategoryCode,
-                    hint: const Text("Pilih Kategori Produk"),
+                    hint: const Text("Choose product category"),
                     isExpanded: true,
                     decoration: InputDecoration(
                       border: OutlineInputBorder(

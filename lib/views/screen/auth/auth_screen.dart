@@ -4,7 +4,6 @@ import 'package:google_sign_in/google_sign_in.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'login_screen.dart';
 import 'register_screen.dart';
-import '../home_screen.dart';
 import '../../../main_layout.dart';
 
 class AuthScreen extends StatelessWidget {

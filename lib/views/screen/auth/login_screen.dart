@@ -2,7 +2,7 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:google_sign_in/google_sign_in.dart';
 import 'register_screen.dart';
-import '../home_screen.dart';
+import '../product/home_screen.dart';
 import '../../../main_layout.dart';
 
 class LoginScreen extends StatefulWidget {
