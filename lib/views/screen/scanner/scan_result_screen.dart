@@ -2,7 +2,6 @@ import 'dart:io';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter_svg/flutter_svg.dart';
 import 'package:image_picker/image_picker.dart';
 
 class ScanResultScreen extends StatefulWidget {
@@ -61,7 +60,6 @@ class _ScanResultScreenState extends State<ScanResultScreen> {
 
     final val = data['debug_ner_results'];
     if (val is List && val.isNotEmpty) {
-      // ubah ke map sederhana
       final Map<String, dynamic> converted = {};
       for (final item in val) {
         if (item is Map && item['key'] != null) {
@@ -131,61 +129,6 @@ class _ScanResultScreenState extends State<ScanResultScreen> {
         .join(' ');
   }
 
-  Future<void> _saveToHistory() async {
-    if (_isSaving) return;
-    setState(() {
-      _isSaving = true;
-    });
-
-    try {
-      final user = FirebaseAuth.instance.currentUser;
-      if (user == null) {
-        if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text("Kamu belum login.")),
-          );
-        }
-        return;
-      }
-
-      final grade = widget.scanResult['grade'] ?? 'N/A';
-      final ner = widget.scanResult['debug_ner_results'] ?? {};
-
-      await FirebaseFirestore.instance
-          .collection('users')
-          .doc(user.uid)
-          .collection('history')
-          .add({
-        'categoryName': widget.categoryName,
-        'grade': grade,
-        'scanResult': widget.scanResult, // simpan mentahan
-        'imageLocalPath': widget.imageFile.path, // opsional, lokal
-        'createdAt': FieldValue.serverTimestamp(),
-      });
-
-      if (mounted) {
-        setState(() {
-          _isSaved = true;
-        });
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text("Hasil scan disimpan ke History ✅")),
-        );
-      }
-    } catch (e) {
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text("Gagal menyimpan: $e")),
-        );
-      }
-    } finally {
-      if (mounted) {
-        setState(() {
-          _isSaving = false;
-        });
-      }
-    }
-  }
-
   Future<void> _toggleBookmark() async {
     if (_isSaving) return;
     setState(() => _isSaving = true);
@@ -195,7 +138,7 @@ class _ScanResultScreenState extends State<ScanResultScreen> {
       if (user == null) {
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text("Kamu belum login.")),
+            const SnackBar(content: Text("You are not logged in.")),
           );
         }
         return;
@@ -223,11 +166,10 @@ class _ScanResultScreenState extends State<ScanResultScreen> {
         if (mounted) {
           setState(() => _isSaved = false);
           ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text("Hasil scan dihapus dari History ❌")),
+            const SnackBar(content: Text("Scan Result are deleted from history ❌")),
           );
         }
       } else {
-        // belum ada → simpan
         await collection.add({
           'categoryName': category,
           'grade': grade,
@@ -238,14 +180,14 @@ class _ScanResultScreenState extends State<ScanResultScreen> {
         if (mounted) {
           setState(() => _isSaved = true);
           ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text("Hasil scan disimpan ke History ✅")),
+            const SnackBar(content: Text("Scan result already save to history ✅")),
           );
         }
       }
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text("Terjadi kesalahan: $e")),
+          SnackBar(content: Text("There is error: $e")),
         );
       }
     } finally {
@@ -291,10 +233,10 @@ class _ScanResultScreenState extends State<ScanResultScreen> {
       backgroundColor: Colors.white,
       appBar: AppBar(
         title: const Text(
-          "Hasil Scan",
+          "Scan Result",
           style: TextStyle(
             fontSize: 20,
-            fontWeight: FontWeight.w700,
+            fontWeight: FontWeight.w600,
             color: Colors.black,
           ),
         ),
@@ -315,7 +257,7 @@ class _ScanResultScreenState extends State<ScanResultScreen> {
                     _isSaved ? Icons.bookmark : Icons.bookmark_border_rounded,
                     color: _isSaved ? const Color(0xFF1C69A8) : Colors.black87,
                   ),
-            tooltip: _isSaved ? "Hapus dari History" : "Simpan ke History",
+            tooltip: _isSaved ? "Delete from History" : "Save to History",
           ),
           const SizedBox(width: 4),
         ],
@@ -345,7 +287,7 @@ class _ScanResultScreenState extends State<ScanResultScreen> {
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         const Text(
-                          "KATEGORI",
+                          "CATEGORY",
                           style: TextStyle(
                             fontSize: 14,
                             color: Colors.grey,
@@ -379,7 +321,7 @@ class _ScanResultScreenState extends State<ScanResultScreen> {
               const SizedBox(height: 16),
 
               const Text(
-                "Detail Hasil Ekstraksi",
+                "Extraction Result Detail",
                 style: TextStyle(
                   fontSize: 18,
                   fontWeight: FontWeight.bold,
@@ -410,7 +352,7 @@ class _ScanResultScreenState extends State<ScanResultScreen> {
                                 Padding(
                                   padding: const EdgeInsets.all(12.0),
                                   child: Text(
-                                    "Tidak ada data nutrisi",
+                                    "No nutritional data",
                                     style: TextStyle(
                                       color: Colors.grey.shade600,
                                     ),

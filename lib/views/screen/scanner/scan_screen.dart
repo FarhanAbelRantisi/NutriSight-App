@@ -1,8 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:camera/camera.dart';
 import 'package:image_picker/image_picker.dart';
-import 'dart:io'; // Untuk File
-// --- 1. IMPORT HALAMAN BARU ---
 import 'scan_detail_screen.dart';
 
 class ScanScreen extends StatefulWidget {
@@ -17,14 +15,14 @@ class _ScanScreenState extends State<ScanScreen> with WidgetsBindingObserver {
   CameraController? _controller;
   bool _isCameraInitialized = false;
   FlashMode _flashMode = FlashMode.off;
-  int _selectedCameraIndex = 0; // 0 = back camera, 1 = front camera
+  int _selectedCameraIndex = 0;
   final ImagePicker _picker = ImagePicker();
 
   @override
   void initState() {
     super.initState();
     WidgetsBinding.instance.addObserver(this);
-    _initializeCamera(0); // Mulai dengan kamera belakang
+    _initializeCamera(0);
   }
 
   @override
@@ -34,7 +32,6 @@ class _ScanScreenState extends State<ScanScreen> with WidgetsBindingObserver {
     super.dispose();
   }
 
-  // Handle app lifecycle changes (e.g., app minimized)
   @override
   void didChangeAppLifecycleState(AppLifecycleState state) {
     final CameraController? cameraController = _controller;
@@ -58,22 +55,18 @@ class _ScanScreenState extends State<ScanScreen> with WidgetsBindingObserver {
         return;
       }
 
-      // Pastikan index kamera valid
       _selectedCameraIndex = cameraIndex % _cameras.length;
 
       final CameraController newController = CameraController(
-        _cameras[_selectedCameraIndex], // Perbaikan: seharusnya _selectedCameraIndex
+        _cameras[_selectedCameraIndex],
         ResolutionPreset.high,
         enableAudio: false,
       );
 
-      // Buang controller lama jika ada
       await _controller?.dispose();
 
-      // Inisialisasi controller baru
       await newController.initialize();
       
-      // Set flash mode awal
       await newController.setFlashMode(_flashMode);
 
       if (mounted) {
@@ -112,16 +105,13 @@ class _ScanScreenState extends State<ScanScreen> with WidgetsBindingObserver {
       
       print("Picture saved to ${imageFile.path}");
 
-      // --- 2. PERUBAHAN NAVIGASI ---
       if (!mounted) return;
       Navigator.push(
         context,
         MaterialPageRoute(
-          // Buka halaman detail, kirim file gambarnya
           builder: (context) => ScanDetailScreen(imageFile: imageFile),
         ),
       );
-      // --- AKHIR PERUBAHAN ---
 
     } on CameraException catch (e) {
       print("Error taking picture: $e");
@@ -135,16 +125,13 @@ class _ScanScreenState extends State<ScanScreen> with WidgetsBindingObserver {
 
       print("Image picked from gallery: ${imageFile.path}");
 
-      // --- 3. PERUBAHAN NAVIGASI ---
       if (!mounted) return;
       Navigator.push(
         context,
         MaterialPageRoute(
-          // Buka halaman detail, kirim file gambarnya
           builder: (context) => ScanDetailScreen(imageFile: imageFile),
         ),
       );
-      // --- AKHIR PERUBAHAN ---
     } catch (e) {
       print("Error picking image: $e");
     }
@@ -163,7 +150,6 @@ class _ScanScreenState extends State<ScanScreen> with WidgetsBindingObserver {
       backgroundColor: Colors.black,
       body: Stack(
         children: [
-          // Layer 1: Camera Preview
           Positioned.fill(
             child: AspectRatio(
               aspectRatio: _controller!.value.aspectRatio,
@@ -171,7 +157,6 @@ class _ScanScreenState extends State<ScanScreen> with WidgetsBindingObserver {
             ),
           ),
           
-          // Layer 2: UI Controls
           _buildControlsOverlay(context),
         ],
       ),
@@ -182,7 +167,6 @@ class _ScanScreenState extends State<ScanScreen> with WidgetsBindingObserver {
     return Column(
       mainAxisAlignment: MainAxisAlignment.spaceBetween,
       children: [
-        // --- Top Controls (Flash, Title, Back) ---
         Container(
           width: double.infinity,
           decoration: BoxDecoration(
@@ -195,35 +179,28 @@ class _ScanScreenState extends State<ScanScreen> with WidgetsBindingObserver {
           child: SafeArea(
             bottom: false,
             child: Padding(
-              // Padding atas dan bawah
               padding: const EdgeInsets.symmetric(horizontal: 8.0, vertical: 12.0),
-              // --- PERUBAHAN DI SINI ---
-              // Child sekarang adalah Column, bukan Row
               child: Column(
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  // Row 1: Tombol Kembali, Judul, Tombol Flash
                   Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     crossAxisAlignment: CrossAxisAlignment.center,
                     children: [
-                      // 1. Back Button
                       SizedBox(
-                        width: 48, // Lebar konsisten untuk spasi
+                        width: 48,
                         child: IconButton(
                           icon: const Icon(Icons.arrow_back_ios_new, color: Colors.white, size: 24),
                           onPressed: () {
-                            // Kembali ke halaman sebelumnya
                             Navigator.of(context).pop();
                           },
                         ),
                       ),
-                      
-                      // 2. Title (Hanya Judul)
+
                       const Expanded(
                         child: Text(
                           "Scan",
-                          textAlign: TextAlign.center, // Pusatkan judul
+                          textAlign: TextAlign.center,
                           style: TextStyle(
                             color: Colors.white,
                             fontSize: 20,
@@ -232,9 +209,8 @@ class _ScanScreenState extends State<ScanScreen> with WidgetsBindingObserver {
                         ),
                       ),
 
-                      // 3. Flash Button
                       SizedBox(
-                        width: 48, // Lebar konsisten untuk spasi
+                        width: 48,
                         child: IconButton(
                           icon: Icon(
                             _flashMode == FlashMode.off ? Icons.flash_off : Icons.flash_on,
@@ -247,8 +223,7 @@ class _ScanScreenState extends State<ScanScreen> with WidgetsBindingObserver {
                     ],
                   ),
                   
-                  // Row 2: Teks Subjudul (di baris terpisah)
-                  const SizedBox(height: 8), // Jarak antara judul dan subjudul
+                  const SizedBox(height: 8),
                   Text(
                     "Scan tabel informasi nilai gizi \n pada produk kemasan.",
                     textAlign: TextAlign.center, // Centered
@@ -259,12 +234,10 @@ class _ScanScreenState extends State<ScanScreen> with WidgetsBindingObserver {
                   ),
                 ],
               ),
-              // --- AKHIR PERUBAHAN ---
             ),
           ),
         ),
 
-        // --- Bottom Controls (Gallery, Shutter, Flip) ---
         Container(
           width: double.infinity,
           decoration: BoxDecoration(
@@ -282,16 +255,13 @@ class _ScanScreenState extends State<ScanScreen> with WidgetsBindingObserver {
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 crossAxisAlignment: CrossAxisAlignment.center,
                 children: [
-                  // Gallery Button
                   IconButton(
                     icon: const Icon(Icons.photo_library, color: Colors.white, size: 32),
                     onPressed: _pickImageFromGallery,
                   ),
                   
-                  // Shutter Button
                   _buildShutterButton(),
 
-                  // Flip Camera Button (Menggantikan tombol Cancel)
                   IconButton(
                     icon: const Icon(Icons.flip_camera_ios, color: Colors.white, size: 32),
                     onPressed: _flipCamera,

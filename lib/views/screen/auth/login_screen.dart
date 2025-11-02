@@ -2,7 +2,6 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:google_sign_in/google_sign_in.dart';
 import 'register_screen.dart';
-import '../product/home_screen.dart';
 import '../../../main_layout.dart';
 
 class LoginScreen extends StatefulWidget {
@@ -18,7 +17,6 @@ class _LoginScreenState extends State<LoginScreen> {
   final Color darkText = const Color(0xFF1D1D1D);
   final Color textFieldBackground = const Color(0xFFF0F0F0);
 
-  // Controller
   final TextEditingController _emailController = TextEditingController();
   final TextEditingController _passwordController = TextEditingController();
   bool _isLoading = false;
@@ -169,7 +167,7 @@ class _LoginScreenState extends State<LoginScreen> {
                 child: Column(
                   mainAxisSize: MainAxisSize.min,
                   children: [
-                    _buildTextField(_emailController, "Username"),
+                    _buildTextField(_emailController, "Email"),
                     const SizedBox(height: 16),
                     _buildTextField(_passwordController, "Password", isObscure: true),
                     const SizedBox(height: 24),

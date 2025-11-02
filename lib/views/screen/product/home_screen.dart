@@ -1,5 +1,9 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
+import 'package:firebase_auth/firebase_auth.dart';
+import 'package:nutrisight/views/screen/product/product_detail_screen.dart';
+import 'package:nutrisight/views/screen/profile/profile_screen.dart';
+
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -86,10 +90,11 @@ class _HomeScreenState extends State<HomeScreen> {
     final q = _searchController.text.toLowerCase();
     if (q.isNotEmpty) {
       result = result.where((doc) {
-        final nameLower = (doc.data()['productName_lowercase'] ?? '')
-            .toString()
-            .toLowerCase();
-        return nameLower.contains(q);
+        final data = doc.data();
+        final nameLower = (data['productName_lowercase'] ?? '').toString().toLowerCase();
+        final barcodeLower = (data['barcode'] ?? '').toString().toLowerCase();
+
+        return nameLower.contains(q) || barcodeLower.contains(q);
       }).toList();
     }
 
@@ -109,6 +114,49 @@ class _HomeScreenState extends State<HomeScreen> {
           'assets/logo_nutrisight.png',
           height: 32,
         ),
+        actions: [
+          StreamBuilder<DocumentSnapshot<Map<String, dynamic>>>(
+            stream: FirebaseAuth.instance.currentUser == null
+                ? const Stream.empty()
+                : FirebaseFirestore.instance
+                    .collection('users')
+                    .doc(FirebaseAuth.instance.currentUser!.uid)
+                    .snapshots(),
+            builder: (context, snapshot) {
+              String? photoUrl;
+              String? name;
+              if (snapshot.hasData && snapshot.data!.data() != null) {
+                photoUrl = snapshot.data!.data()!['photoUrl'] as String?;
+                name = snapshot.data!.data()!['name'] as String?;
+              }
+
+              return Padding(
+                padding: const EdgeInsets.only(right: 16.0),
+                child: GestureDetector(
+                  onTap: () {
+                    Navigator.push(context, MaterialPageRoute(builder: (_) => const ProfileScreen()));
+                  },
+                  child: CircleAvatar(
+                    radius: 18,
+                    backgroundColor: Colors.grey.shade300,
+                    backgroundImage:
+                        photoUrl != null ? NetworkImage(photoUrl) : null,
+                    child: photoUrl == null
+                        ? Text(
+                            (name ?? 'U').substring(0, 1).toUpperCase(),
+                            style: const TextStyle(
+                              fontSize: 14,
+                              fontWeight: FontWeight.bold,
+                              color: Colors.black,
+                            ),
+                          )
+                        : null,
+                  ),
+                ),
+              );
+            },
+          ),
+        ],
       ),
       body: Column(
         children: [
@@ -138,8 +186,7 @@ class _HomeScreenState extends State<HomeScreen> {
     return TextField(
       controller: _searchController,
       decoration: InputDecoration(
-        labelStyle: TextStyle(color:Color(0xFF9D9D9D)),
-        hintText: 'Search for a product',
+        hintText: 'Search by name or barcode',
         prefixIcon: const Icon(Icons.search),
         filled: true,
         fillColor: Colors.white,
@@ -268,66 +315,81 @@ class ProductGridCard extends StatelessWidget {
     String imageUrl = data['imageUrl'] ?? '';
     String grade = data['grade'] ?? '';
 
-    return Card(
-      elevation: 1,
-      shadowColor: Colors.grey.shade50,
-      color: Colors.white,
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-      clipBehavior: Clip.antiAlias,
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Stack(
-            children: [
-              Container(
-                height: 150,
-                width: double.infinity,
-                color: Color(0xFFFFFFFF),
-                padding: const EdgeInsets.all(8),
-                child: imageUrl.isNotEmpty
-                    ? Image.network(
-                        imageUrl,
-                        fit: BoxFit.contain,
-                        loadingBuilder: (context, child, loadingProgress) {
-                          if (loadingProgress == null) return child;
-                          return const Center(child: CircularProgressIndicator(strokeWidth: 2));
-                        },
-                        errorBuilder: (context, error, stackTrace) {
-                          return const Icon(Icons.image_not_supported, color: Colors.grey);
-                        },
-                      )
-                    : const Icon(Icons.image_not_supported, color: Colors.grey, size: 50),
-              ),
-              Positioned(
-                top: 4,
-                right: 10,
-                child: _GradeBadge(grade: grade),
-              ),
-            ],
+    return InkWell(
+      borderRadius: BorderRadius.circular(16),
+      onTap: () {
+        Navigator.push(
+          context,
+          MaterialPageRoute(
+            builder: (_) => ProductDetailScreen(product: data),
           ),
-          
-          Padding(
-            padding: const EdgeInsets.all(12.0),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
+        );
+      },
+      child: Card(
+        elevation: 1,
+        shadowColor: Colors.grey.shade50,
+        color: Colors.white,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+        clipBehavior: Clip.antiAlias,
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Stack(
               children: [
-                Text(
-                  productName,
-                  style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 13),
-                  maxLines: 2,
-                  overflow: TextOverflow.ellipsis,
+                Container(
+                  height: 150,
+                  width: double.infinity,
+                  color: const Color(0xFFFFFFFF),
+                  padding: const EdgeInsets.all(8),
+                  child: imageUrl.isNotEmpty
+                      ? Image.network(
+                          imageUrl,
+                          fit: BoxFit.contain,
+                          loadingBuilder: (context, child, loadingProgress) {
+                            if (loadingProgress == null) return child;
+                            return const Center(
+                                child: CircularProgressIndicator(strokeWidth: 2));
+                          },
+                          errorBuilder: (context, error, stackTrace) {
+                            return const Icon(Icons.image_not_supported,
+                                color: Colors.grey);
+                          },
+                        )
+                      : const Icon(Icons.image_not_supported,
+                          color: Colors.grey, size: 50),
                 ),
-                const SizedBox(height: 4),
-                Text(
-                  manufacturer,
-                  style: TextStyle(fontSize: 11, color: Colors.grey.shade600),
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
+                Positioned(
+                  top: 4,
+                  right: 10,
+                  child: _GradeBadge(grade: grade),
                 ),
               ],
             ),
-          ),
-        ],
+            Padding(
+              padding: const EdgeInsets.all(12.0),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    productName,
+                    style: const TextStyle(
+                        fontWeight: FontWeight.w700, fontSize: 13),
+                    maxLines: 2,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                  const SizedBox(height: 4),
+                  Text(
+                    manufacturer,
+                    style:
+                        TextStyle(fontSize: 11, color: Colors.grey.shade600),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }

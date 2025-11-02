@@ -1,5 +1,4 @@
 import 'dart:io';
-
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
@@ -100,10 +99,9 @@ class _HistoryDetailScreenState extends State<HistoryDetailScreen> {
                 shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
               ),
               onPressed: () => Navigator.pop(ctx, false),
-              child: const Text("Batal"),
+              child: const Text("Cancel"),
             ),
 
-            // Tombol Hapus
             ElevatedButton(
               style: ElevatedButton.styleFrom(
                 backgroundColor: const Color(0xFF1C69A8),
@@ -111,7 +109,7 @@ class _HistoryDetailScreenState extends State<HistoryDetailScreen> {
                 shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
               ),
               onPressed: () => Navigator.pop(ctx, true),
-              child: const Text("Hapus"),
+              child: const Text("Delete"),
             ),
           ],
         );
@@ -238,7 +236,7 @@ class _HistoryDetailScreenState extends State<HistoryDetailScreen> {
                     Icons.bookmark,
                     color: Colors.redAccent,
                   ),
-            tooltip: "Hapus dari History",
+            tooltip: "Delete from History",
           ),
           const SizedBox(width: 4),
         ],
@@ -248,7 +246,6 @@ class _HistoryDetailScreenState extends State<HistoryDetailScreen> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // gambar
             ClipRRect(
               borderRadius: BorderRadius.circular(16),
               child: SizedBox(
@@ -270,7 +267,6 @@ class _HistoryDetailScreenState extends State<HistoryDetailScreen> {
             ),
             const SizedBox(height: 20),
 
-            // kategori + grade di kanan
             Row(
               crossAxisAlignment: CrossAxisAlignment.center,
               children: [
@@ -309,7 +305,7 @@ class _HistoryDetailScreenState extends State<HistoryDetailScreen> {
                 _buildGradeLogo(grade),
               ],
             ),
-            const SizedBox(height: 16),
+            const SizedBox(height: 12),
             const Divider(),
             const SizedBox(height: 16),
 

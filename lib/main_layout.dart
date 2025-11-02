@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:nutrisight/views/screen/education/education_screen.dart';
 import 'package:nutrisight/views/screen/history/history_screen.dart';
 import 'package:nutrisight/views/screen/product/home_screen.dart';
+import 'package:nutrisight/views/screen/profile/profile_screen.dart';
 import 'package:nutrisight/views/screen/scanner/scan_screen.dart';
 
 class MainLayout extends StatefulWidget {
@@ -12,22 +13,17 @@ class MainLayout extends StatefulWidget {
 }
 
 class _MainLayoutState extends State<MainLayout> {
-  // index untuk halaman yang benar-benar ditampilkan (bukan index nav)
-  // 0 = home, 1 = education, 2 = history, 3 = profile
   int _selectedPageIndex = 0;
 
-  // 4 halaman (scan nggak dimasukin karena dia modal/navigate)
   final List<Widget> _pages = const [
     HomeScreen(),
     EducationScreen(),
     HistoryScreen(),
-    Center(child: Text('Halaman Profil')),
+    ProfileScreen(),
   ];
 
   void _onNavTapped(int navIndex) {
-    // navIndex: 0=home, 1=edu, 2=scan, 3=history, 4=profile
     if (navIndex == 2) {
-      // ini tombol scan
       Navigator.push(
         context,
         MaterialPageRoute(builder: (context) => const ScanScreen()),
@@ -35,7 +31,6 @@ class _MainLayoutState extends State<MainLayout> {
       return;
     }
 
-    // untuk navIndex di atas 2, geser 1 ke kiri (karena di _pages kita cuma ada 4)
     final int mappedPageIndex = navIndex > 2 ? navIndex - 1 : navIndex;
 
     setState(() {
@@ -45,7 +40,6 @@ class _MainLayoutState extends State<MainLayout> {
 
   @override
   Widget build(BuildContext context) {
-    // supaya bottomnav transparan ke body
     return Scaffold(
       extendBody: true,
       backgroundColor: Colors.transparent,
@@ -56,7 +50,7 @@ class _MainLayoutState extends State<MainLayout> {
       bottomNavigationBar: SafeArea(
         top: false,
         child: Container(
-          margin: const EdgeInsets.all(20),
+          margin: const EdgeInsets.fromLTRB(20, 20, 20, 12),
           decoration: BoxDecoration(
             color: Colors.white,
             borderRadius: BorderRadius.circular(25),
@@ -94,7 +88,6 @@ class _MainLayoutState extends State<MainLayout> {
                     label: 'Education',
                   ),
 
-                  // ======= SCAN (tengah) =========
                   BottomNavigationBarItem(
                     label: '',
                     icon: Container(
@@ -118,7 +111,6 @@ class _MainLayoutState extends State<MainLayout> {
                       ),
                     ),
                   ),
-                  // ===============================
 
                   const BottomNavigationBarItem(
                     icon: Icon(Icons.history_rounded),
