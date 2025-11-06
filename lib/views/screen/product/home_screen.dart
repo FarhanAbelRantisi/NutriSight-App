@@ -150,7 +150,6 @@ class _HomeScreenBodyState extends State<_HomeScreenBody> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        // Grade filter
         SingleChildScrollView(
           scrollDirection: Axis.horizontal,
           child: Row(
@@ -183,7 +182,7 @@ class _HomeScreenBodyState extends State<_HomeScreenBody> {
         ),
 
         const SizedBox(height: 4),
-        
+
         SingleChildScrollView(
           scrollDirection: Axis.horizontal,
           child: Row(

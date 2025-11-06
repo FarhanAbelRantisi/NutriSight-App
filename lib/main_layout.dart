@@ -42,7 +42,7 @@ class _MainLayoutState extends State<MainLayout> {
   Widget build(BuildContext context) {
     return Scaffold(
       extendBody: true,
-      backgroundColor: Colors.transparent,
+      backgroundColor: Colors.grey[50],
       body: IndexedStack(
         index: _selectedPageIndex,
         children: _pages,
