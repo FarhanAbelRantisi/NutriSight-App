@@ -1,24 +1,36 @@
 import 'dart:io';
-import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
+import '../../../viewmodel/history/history_detail_view_model.dart';
 
-class HistoryDetailScreen extends StatefulWidget {
-  final QueryDocumentSnapshot<Map<String, dynamic>> historyDoc;
+class HistoryDetailScreen extends StatelessWidget {
+  final String userId;
+  final String docId;
+  final Map<String, dynamic> data;
 
   const HistoryDetailScreen({
     super.key,
-    required this.historyDoc,
+    required this.userId,
+    required this.docId,
+    required this.data,
   });
 
   @override
-  State<HistoryDetailScreen> createState() => _HistoryDetailScreenState();
+  Widget build(BuildContext context) {
+    return ChangeNotifierProvider<HistoryDetailViewModel>(
+      create: (_) => HistoryDetailViewModel(
+        userId: userId,
+        docId: docId,
+        rawData: data,
+      ),
+      child: const _HistoryDetailView(),
+    );
+  }
 }
 
-class _HistoryDetailScreenState extends State<HistoryDetailScreen> {
-  bool _isDeleting = false;
+class _HistoryDetailView extends StatelessWidget {
+  const _HistoryDetailView({super.key});
 
-  // ambil logo grade
   Widget _buildGradeLogo(String grade) {
     String? asset;
     switch (grade) {
@@ -58,23 +70,9 @@ class _HistoryDetailScreenState extends State<HistoryDetailScreen> {
     );
   }
 
-  // format key nutrisi
-  String _formatNerKey(String key) {
-    if (key.isEmpty) return "N/A";
-    return key
-        .replaceAll('_', ' ')
-        .replaceAll('-', ' ')
-        .split(' ')
-        .map((w) =>
-            w.isEmpty ? '' : '${w[0].toUpperCase()}${w.substring(1).toLowerCase()}')
-        .join(' ');
-  }
-
-  Future<void> _confirmAndDelete() async {
-    if (_isDeleting) return;
-
-    final user = FirebaseAuth.instance.currentUser;
-    if (user == null) return;
+  Future<void> _confirmAndDelete(BuildContext context) async {
+    final vm = context.read<HistoryDetailViewModel>();
+    if (vm.isDeleting) return;
 
     final shouldDelete = await showDialog<bool>(
       context: context,
@@ -93,20 +91,21 @@ class _HistoryDetailScreenState extends State<HistoryDetailScreen> {
           actions: [
             OutlinedButton(
               style: OutlinedButton.styleFrom(
-                foregroundColor: Color(0xFF1C69A8),
+                foregroundColor: const Color(0xFF1C69A8),
                 side: const BorderSide(color: Color(0xFF1C69A8), width: 1.5),
                 backgroundColor: Colors.transparent,
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(12)),
               ),
               onPressed: () => Navigator.pop(ctx, false),
               child: const Text("Cancel"),
             ),
-
             ElevatedButton(
               style: ElevatedButton.styleFrom(
                 backgroundColor: const Color(0xFF1C69A8),
                 foregroundColor: Colors.white,
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(12)),
               ),
               onPressed: () => Navigator.pop(ctx, true),
               child: const Text("Delete"),
@@ -118,66 +117,29 @@ class _HistoryDetailScreenState extends State<HistoryDetailScreen> {
 
     if (shouldDelete != true) return;
 
-    setState(() => _isDeleting = true);
-
     try {
-      await FirebaseFirestore.instance
-          .collection('users')
-          .doc(user.uid)
-          .collection('history')
-          .doc(widget.historyDoc.id)
-          .delete();
-
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text("Hasil scan dihapus dari history ❌")),
-        );
-        Navigator.pop(context);
-      }
+      await vm.deleteHistory();
+      if (!context.mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text("Hasil scan dihapus dari history ❌")),
+      );
+      Navigator.pop(context);
     } catch (e) {
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text("Gagal menghapus: $e")),
-        );
-      }
-    } finally {
-      if (mounted) setState(() => _isDeleting = false);
+      if (!context.mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text("Gagal menghapus: $e")),
+      );
     }
   }
 
   @override
   Widget build(BuildContext context) {
-    final data = widget.historyDoc.data();
+    final vm = context.watch<HistoryDetailViewModel>();
 
-    final String categoryName =
-        (data['categoryName'] ?? 'Tidak diketahui').toString();
-    final String grade = (data['grade'] ?? 'N/A').toString();
-    final String? imageLocalPath =
-        (data['imageLocalPath'] ?? '').toString().isEmpty
-            ? null
-            : data['imageLocalPath'].toString();
-
-    final Map<String, dynamic> scanResult =
-        (data['scanResult'] ?? {}) is Map<String, dynamic>
-            ? data['scanResult'] as Map<String, dynamic>
-            : {};
-
-    final Map<String, dynamic> nerResults = (() {
-      final possibleKeys = [
-        'debug_ner_results',
-        'extracted_fields',
-        'ner',
-        'parsed_fields',
-        'fields',
-      ];
-      for (final k in possibleKeys) {
-        final val = scanResult[k];
-        if (val is Map<String, dynamic> && val.isNotEmpty) {
-          return val;
-        }
-      }
-      return <String, dynamic>{};
-    })();
+    final categoryName = vm.categoryName;
+    final grade = vm.grade;
+    final imageLocalPath = vm.imageLocalPath;
+    final nerResults = vm.nerResults;
 
     final List<TableRow> tableRows = nerResults.entries.map((entry) {
       return TableRow(
@@ -190,7 +152,7 @@ class _HistoryDetailScreenState extends State<HistoryDetailScreen> {
           Padding(
             padding: const EdgeInsets.all(12.0),
             child: Text(
-              _formatNerKey(entry.key),
+              vm.formatNerKey(entry.key),
               style: const TextStyle(
                 fontWeight: FontWeight.w500,
                 fontSize: 14,
@@ -225,8 +187,8 @@ class _HistoryDetailScreenState extends State<HistoryDetailScreen> {
         elevation: 1,
         actions: [
           IconButton(
-            onPressed: _isDeleting ? null : _confirmAndDelete,
-            icon: _isDeleting
+            onPressed: vm.isDeleting ? null : () => _confirmAndDelete(context),
+            icon: vm.isDeleting
                 ? const SizedBox(
                     height: 22,
                     width: 22,
@@ -251,7 +213,7 @@ class _HistoryDetailScreenState extends State<HistoryDetailScreen> {
               child: SizedBox(
                 height: 240,
                 width: double.infinity,
-                child: imageLocalPath != null && File(imageLocalPath).existsSync()
+                child: imageLocalPath != null && vm.imageExists
                     ? Image.file(
                         File(imageLocalPath),
                         fit: BoxFit.cover,

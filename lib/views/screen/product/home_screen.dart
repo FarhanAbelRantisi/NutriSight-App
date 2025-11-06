@@ -1,110 +1,55 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
+import 'package:nutrisight/data/product_repository.dart';
+import 'package:nutrisight/viewmodel/home_view_model.dart';
 import 'package:nutrisight/views/screen/product/product_detail_screen.dart';
 import 'package:nutrisight/views/screen/profile/profile_screen.dart';
 
-
-class HomeScreen extends StatefulWidget {
+class HomeScreen extends StatelessWidget {
   const HomeScreen({super.key});
 
   @override
-  State<HomeScreen> createState() => _HomeScreenState();
+  Widget build(BuildContext context) {
+    return ChangeNotifierProvider<HomeViewModel>(
+      create: (_) =>
+          HomeViewModel(ProductRepository(FirebaseFirestore.instance))
+            ..init(),
+      child: const _HomeScreenBody(),
+    );
+  }
 }
 
-class _HomeScreenState extends State<HomeScreen> {
-  bool _isLoading = true;
+class _HomeScreenBody extends StatefulWidget {
+  const _HomeScreenBody({super.key});
 
-  List<QueryDocumentSnapshot<Map<String, dynamic>>> _allProducts = [];
+  @override
+  State<_HomeScreenBody> createState() => _HomeScreenBodyState();
+}
 
-  List<QueryDocumentSnapshot<Map<String, dynamic>>> _filteredProducts = [];
-
+class _HomeScreenBodyState extends State<_HomeScreenBody> {
   final TextEditingController _searchController = TextEditingController();
-
-  String _selectedGrade = 'All';
-  String _selectedCategory = 'All';
-  List<String> _allCategories = ['All'];
 
   @override
   void initState() {
     super.initState();
-    _fetch();
-    _searchController.addListener(_applyFilters);
-  }
-
-  @override
-  void dispose() {
-    _searchController.removeListener(_applyFilters);
-    _searchController.dispose();
-    super.dispose();
-  }
-
-  Future<void> _fetch() async {
-    try {
-      final snap = await FirebaseFirestore.instance
-          .collection('products')
-          .orderBy('productName_lowercase')
-          .limit(60)
-          .get();
-
-      final Set<String> categories = {'All'};
-      for (var doc in snap.docs) {
-        final data = doc.data();
-        final categoryName = (data['categoryName'] ?? '').toString();
-        if (categoryName.isNotEmpty) {
-          categories.add(categoryName);
-        }
-      }
-
-      setState(() {
-        _allProducts = snap.docs;
-        _filteredProducts = snap.docs;
-        _allCategories = categories.toList()..sort();
-        _isLoading = false;
-      });
-    } catch (e) {
-      debugPrint("🔥 error fetch: $e");
-      setState(() {
-        _isLoading = false;
-      });
-    }
-  }
-
-  void _applyFilters() {
-    List<QueryDocumentSnapshot<Map<String, dynamic>>> result = List.from(_allProducts);
-
-    if (_selectedGrade != 'All') {
-      result = result.where((doc) {
-        final grade = (doc.data()['grade'] ?? '').toString();
-        return grade == _selectedGrade;
-      }).toList();
-    }
-
-    if (_selectedCategory != 'All') {
-      result = result.where((doc) {
-        final cat = (doc.data()['categoryName'] ?? '').toString();
-        return cat == _selectedCategory;
-      }).toList();
-    }
-
-    final q = _searchController.text.toLowerCase();
-    if (q.isNotEmpty) {
-      result = result.where((doc) {
-        final data = doc.data();
-        final nameLower = (data['productName_lowercase'] ?? '').toString().toLowerCase();
-        final barcodeLower = (data['barcode'] ?? '').toString().toLowerCase();
-
-        return nameLower.contains(q) || barcodeLower.contains(q);
-      }).toList();
-    }
-
-    setState(() {
-      _filteredProducts = result;
+    _searchController.addListener(() {
+      context.read<HomeViewModel>().updateSearch(_searchController.text);
     });
   }
 
   @override
+  void dispose() {
+    _searchController.removeListener(() {});
+    _searchController.dispose();
+    super.dispose();
+  }
+
+  @override
   Widget build(BuildContext context) {
+    final vm = context.watch<HomeViewModel>();
+
     return Scaffold(
       backgroundColor: Colors.grey[50],
       appBar: AppBar(
@@ -134,7 +79,11 @@ class _HomeScreenState extends State<HomeScreen> {
                 padding: const EdgeInsets.only(right: 16.0),
                 child: GestureDetector(
                   onTap: () {
-                    Navigator.push(context, MaterialPageRoute(builder: (_) => const ProfileScreen()));
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                          builder: (_) => const ProfileScreen()),
+                    );
                   },
                   child: CircleAvatar(
                     radius: 18,
@@ -161,21 +110,19 @@ class _HomeScreenState extends State<HomeScreen> {
       body: Column(
         children: [
           Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 16),
+            padding: const EdgeInsets.only(left: 16, right: 16, top: 8),
             child: _buildSearchBar(),
           ),
-          const SizedBox(height: 12),
-
+          const SizedBox(height: 8),
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: 16),
-            child: _buildFilters(),
+            child: _buildFilters(vm),
           ),
           const SizedBox(height: 12),
-
           Expanded(
-            child: _isLoading
+            child: vm.isLoading
                 ? const Center(child: CircularProgressIndicator())
-                : _buildProductGrid(),
+                : _buildProductGrid(vm),
           ),
         ],
       ),
@@ -199,35 +146,34 @@ class _HomeScreenState extends State<HomeScreen> {
     );
   }
 
-  Widget _buildFilters() {
+  Widget _buildFilters(HomeViewModel vm) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
+        // Grade filter
         SingleChildScrollView(
           scrollDirection: Axis.horizontal,
           child: Row(
             children: ['All', 'A', 'B', 'C', 'D'].map((g) {
-              final selected = _selectedGrade == g;
+              final selected = vm.selectedGrade == g;
               return Padding(
                 padding: const EdgeInsets.only(right: 8.0),
                 child: ChoiceChip(
                   label: Text('Grade $g'),
                   selected: selected,
                   onSelected: (_) {
-                    setState(() {
-                      _selectedGrade = g;
-                    });
-                    _applyFilters();
+                    vm.setSelectedGrade(g);
                   },
                   selectedColor: Colors.blue.shade800,
                   backgroundColor: Colors.white,
                   labelStyle: TextStyle(
-                    color: selected ? Colors.white : Color(0xFF9D9D9D),
+                    color: selected ? Colors.white : const Color(0xFF9D9D9D),
                   ),
                   showCheckmark: false,
                   shape: StadiumBorder(
                     side: BorderSide(
-                      color: selected ? Colors.transparent : Colors.grey.shade200,
+                      color:
+                          selected ? Colors.transparent : Colors.grey.shade200,
                     ),
                   ),
                 ),
@@ -235,13 +181,14 @@ class _HomeScreenState extends State<HomeScreen> {
             }).toList(),
           ),
         ),
-        const SizedBox(height: 8),
 
+        const SizedBox(height: 4),
+        
         SingleChildScrollView(
           scrollDirection: Axis.horizontal,
           child: Row(
-            children: _allCategories.map((cat) {
-              final selected = _selectedCategory == cat;
+            children: vm.allCategories.map((cat) {
+              final selected = vm.selectedCategory == cat;
               return Padding(
                 padding: const EdgeInsets.only(right: 8.0),
                 child: ChoiceChip(
@@ -251,20 +198,18 @@ class _HomeScreenState extends State<HomeScreen> {
                   ),
                   selected: selected,
                   onSelected: (_) {
-                    setState(() {
-                      _selectedCategory = cat;
-                    });
-                    _applyFilters();
+                    vm.setSelectedCategory(cat);
                   },
                   selectedColor: Colors.green.shade700,
                   backgroundColor: Colors.white,
                   labelStyle: TextStyle(
-                    color: selected ? Colors.white : Color(0xFF9D9D9D),
+                    color: selected ? Colors.white : const Color(0xFF9D9D9D),
                   ),
                   showCheckmark: false,
                   shape: StadiumBorder(
                     side: BorderSide(
-                      color: selected ? Colors.transparent : Colors.grey.shade200,
+                      color:
+                          selected ? Colors.transparent : Colors.grey.shade200,
                     ),
                   ),
                 ),
@@ -276,8 +221,8 @@ class _HomeScreenState extends State<HomeScreen> {
     );
   }
 
-  Widget _buildProductGrid() {
-    if (_filteredProducts.isEmpty) {
+  Widget _buildProductGrid(HomeViewModel vm) {
+    if (vm.filteredProducts.isEmpty) {
       return const Center(
         child: Text(
           'Produk tidak ditemukan',
@@ -294,9 +239,9 @@ class _HomeScreenState extends State<HomeScreen> {
         crossAxisSpacing: 8,
         mainAxisSpacing: 8,
       ),
-      itemCount: _filteredProducts.length,
+      itemCount: vm.filteredProducts.length,
       itemBuilder: (context, index) {
-        var data = _filteredProducts[index].data() as Map<String, dynamic>;
+        final data = vm.filteredProducts[index].data();
         return ProductGridCard(data: data);
       },
     );
@@ -348,7 +293,8 @@ class ProductGridCard extends StatelessWidget {
                           loadingBuilder: (context, child, loadingProgress) {
                             if (loadingProgress == null) return child;
                             return const Center(
-                                child: CircularProgressIndicator(strokeWidth: 2));
+                                child:
+                                    CircularProgressIndicator(strokeWidth: 2));
                           },
                           errorBuilder: (context, error, stackTrace) {
                             return const Icon(Icons.image_not_supported,

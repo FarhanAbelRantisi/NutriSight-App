@@ -1,76 +1,35 @@
 import 'dart:io';
-import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
-import 'package:image_picker/image_picker.dart';
+import 'package:provider/provider.dart';
+import '../../../viewmodel/scan/scan_result_view_model.dart';
 
-class ScanResultScreen extends StatefulWidget {
-  final XFile imageFile;
+class ScanResultScreen extends StatelessWidget {
+  final String imagePath;
   final String categoryName;
   final Map<String, dynamic> scanResult;
 
   const ScanResultScreen({
     super.key,
-    required this.imageFile,
+    required this.imagePath,
     required this.categoryName,
     required this.scanResult,
   });
 
   @override
-  State<ScanResultScreen> createState() => _ScanResultScreenState();
+  Widget build(BuildContext context) {
+    return ChangeNotifierProvider<ScanResultViewModel>(
+      create: (_) => ScanResultViewModel(
+        imagePath: imagePath,
+        categoryName: categoryName,
+        scanResult: scanResult,
+      ),
+      child: const _ScanResultView(),
+    );
+  }
 }
 
-class _ScanResultScreenState extends State<ScanResultScreen> {
-  bool _isSaving = false;
-  bool _isSaved = false;
-  
-  String _extractGrade(Map<String, dynamic> data) {
-    final candidates = [
-      data['grade'],
-      data['predicted_grade'],
-      data['nutri_grade'],
-      data['result'] is Map ? (data['result'] as Map)['grade'] : null,
-    ];
-
-    for (var c in candidates) {
-      if (c == null) continue;
-      final s = c.toString().trim();
-      if (s.isNotEmpty && s.toUpperCase() != 'N/A') {
-        return s.toUpperCase();
-      }
-    }
-    return 'N/A';
-  }
-
-  Map<String, dynamic> _extractNer(Map<String, dynamic> data) {
-    final possibleKeys = [
-      'debug_ner_results',
-      'extracted_fields',
-      'ner',
-      'parsed_fields',
-      'fields',
-    ];
-
-    for (final key in possibleKeys) {
-      final val = data[key];
-      if (val is Map<String, dynamic> && val.isNotEmpty) {
-        return val;
-      }
-    }
-
-    final val = data['debug_ner_results'];
-    if (val is List && val.isNotEmpty) {
-      final Map<String, dynamic> converted = {};
-      for (final item in val) {
-        if (item is Map && item['key'] != null) {
-          converted[item['key'].toString()] = item['value'] ?? '';
-        }
-      }
-      if (converted.isNotEmpty) return converted;
-    }
-
-    return {};
-  }
+class _ScanResultView extends StatelessWidget {
+  const _ScanResultView({super.key});
 
   Widget _buildGradeLogo(String grade) {
     String? assetName;
@@ -119,88 +78,13 @@ class _ScanResultScreenState extends State<ScanResultScreen> {
     );
   }
 
-  String _formatNerKey(String key) {
-    if (key.isEmpty) return "N/A";
-    return key
-        .replaceAll('_', ' ')
-        .replaceAll('-', ' ')
-        .split(' ')
-        .map((w) => w.isEmpty ? '' : '${w[0].toUpperCase()}${w.substring(1).toLowerCase()}')
-        .join(' ');
-  }
-
-  Future<void> _toggleBookmark() async {
-    if (_isSaving) return;
-    setState(() => _isSaving = true);
-
-    try {
-      final user = FirebaseAuth.instance.currentUser;
-      if (user == null) {
-        if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text("You are not logged in.")),
-          );
-        }
-        return;
-      }
-
-      final collection = FirebaseFirestore.instance
-          .collection('users')
-          .doc(user.uid)
-          .collection('history');
-
-      final grade = widget.scanResult['grade'] ?? 'N/A';
-      final category = widget.categoryName;
-
-      // cek apakah sudah ada
-      final existing = await collection
-          .where('categoryName', isEqualTo: category)
-          .where('grade', isEqualTo: grade)
-          .where('imageLocalPath', isEqualTo: widget.imageFile.path)
-          .limit(1)
-          .get();
-
-      if (existing.docs.isNotEmpty) {
-        // sudah ada → hapus
-        await collection.doc(existing.docs.first.id).delete();
-        if (mounted) {
-          setState(() => _isSaved = false);
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text("Scan Result are deleted from history ❌")),
-          );
-        }
-      } else {
-        await collection.add({
-          'categoryName': category,
-          'grade': grade,
-          'scanResult': widget.scanResult,
-          'imageLocalPath': widget.imageFile.path,
-          'createdAt': FieldValue.serverTimestamp(),
-        });
-        if (mounted) {
-          setState(() => _isSaved = true);
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text("Scan result already save to history ✅")),
-          );
-        }
-      }
-    } catch (e) {
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text("There is error: $e")),
-        );
-      }
-    } finally {
-      if (mounted) setState(() => _isSaving = false);
-    }
-  }
-
   @override
   Widget build(BuildContext context) {
-    final String grade = _extractGrade(widget.scanResult);
-    final Map<String, dynamic> nerResults = _extractNer(widget.scanResult);
+    final vm = context.watch<ScanResultViewModel>();
+    final grade = vm.grade;
+    final nerResults = vm.nerResults;
 
-    final List<TableRow> tableRows = nerResults.entries.map((entry) {
+    final tableRows = nerResults.entries.map((entry) {
       return TableRow(
         decoration: BoxDecoration(
           border: Border(
@@ -211,7 +95,7 @@ class _ScanResultScreenState extends State<ScanResultScreen> {
           Padding(
             padding: const EdgeInsets.all(12.0),
             child: Text(
-              _formatNerKey(entry.key),
+              vm.formatNerKey(entry.key),
               style: const TextStyle(
                 fontWeight: FontWeight.w500,
                 fontSize: 14,
@@ -246,18 +130,43 @@ class _ScanResultScreenState extends State<ScanResultScreen> {
         elevation: 1,
         actions: [
           IconButton(
-            onPressed: _isSaving ? null : _toggleBookmark,
-            icon: _isSaving
+            onPressed: vm.isSaving
+                ? null
+                : () async {
+                    try {
+                      await vm.toggleBookmark();
+                      if (!context.mounted) return;
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        SnackBar(
+                          content: Text(
+                            vm.isSaved
+                                ? "Scan result saved to history ✅"
+                                : "Scan result removed from history ❌",
+                          ),
+                        ),
+                      );
+                    } catch (e) {
+                      if (!context.mounted) return;
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        SnackBar(content: Text(e.toString())),
+                      );
+                    }
+                  },
+            icon: vm.isSaving
                 ? const SizedBox(
                     height: 22,
                     width: 22,
                     child: CircularProgressIndicator(strokeWidth: 2),
                   )
                 : Icon(
-                    _isSaved ? Icons.bookmark : Icons.bookmark_border_rounded,
-                    color: _isSaved ? const Color(0xFF1C69A8) : Colors.black87,
+                    vm.isSaved
+                        ? Icons.bookmark
+                        : Icons.bookmark_border_rounded,
+                    color:
+                        vm.isSaved ? const Color(0xFF1C69A8) : Colors.black87,
                   ),
-            tooltip: _isSaved ? "Delete from History" : "Save to History",
+            tooltip:
+                vm.isSaved ? "Delete from History" : "Save to History",
           ),
           const SizedBox(width: 4),
         ],
@@ -271,7 +180,7 @@ class _ScanResultScreenState extends State<ScanResultScreen> {
               ClipRRect(
                 borderRadius: BorderRadius.circular(16),
                 child: Image.file(
-                  File(widget.imageFile.path),
+                  File(vm.imagePath),
                   height: 250,
                   width: double.infinity,
                   fit: BoxFit.cover,
@@ -295,7 +204,7 @@ class _ScanResultScreenState extends State<ScanResultScreen> {
                           ),
                         ),
                         Text(
-                          widget.categoryName,
+                          vm.categoryName,
                           style: const TextStyle(
                             fontSize: 18,
                             fontWeight: FontWeight.bold,

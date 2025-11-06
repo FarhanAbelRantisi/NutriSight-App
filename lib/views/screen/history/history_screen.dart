@@ -2,6 +2,8 @@ import 'dart:io';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
+import '../../../viewmodel/history/history_list_view_model.dart';
 import 'history_detail_screen.dart';
 
 class HistoryScreen extends StatelessWidget {
@@ -58,6 +60,25 @@ class HistoryScreen extends StatelessWidget {
       );
     }
 
+    return ChangeNotifierProvider(
+      create: (_) => HistoryListViewModel(userId: user.uid),
+      child: _HistoryScreenBody(buildGradeImage: _buildGradeImage),
+    );
+  }
+}
+
+class _HistoryScreenBody extends StatelessWidget {
+  final Widget Function(String grade) buildGradeImage;
+
+  const _HistoryScreenBody({
+    super.key,
+    required this.buildGradeImage,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final vm = context.watch<HistoryListViewModel>();
+
     return Scaffold(
       backgroundColor: Colors.grey[50],
       appBar: AppBar(
@@ -75,12 +96,7 @@ class HistoryScreen extends StatelessWidget {
         elevation: 1,
       ),
       body: StreamBuilder<QuerySnapshot<Map<String, dynamic>>>(
-        stream: FirebaseFirestore.instance
-            .collection('users')
-            .doc(user.uid)
-            .collection('history')
-            .orderBy('createdAt', descending: true)
-            .snapshots(),
+        stream: vm.historyStream,
         builder: (context, snapshot) {
           if (snapshot.connectionState == ConnectionState.waiting) {
             return const Center(child: CircularProgressIndicator());
@@ -89,7 +105,7 @@ class HistoryScreen extends StatelessWidget {
           if (!snapshot.hasData || snapshot.data!.docs.isEmpty) {
             return const Center(
               child: Text(
-                "Belum ada riwayat scan.",
+                "There is no scan history yet.",
                 style: TextStyle(color: Colors.grey),
               ),
             );
@@ -117,7 +133,8 @@ class HistoryScreen extends StatelessWidget {
               if (createdAt != null) {
                 final dt = createdAt.toDate();
                 subtitle =
-                    "${dt.day.toString().padLeft(2, '0')}/${dt.month.toString().padLeft(2, '0')}/${dt.year} ${dt.hour.toString().padLeft(2, '0')}:${dt.minute.toString().padLeft(2, '0')}";
+                    "${dt.day.toString().padLeft(2, '0')}/${dt.month.toString().padLeft(2, '0')}/${dt.year} "
+                    "${dt.hour.toString().padLeft(2, '0')}:${dt.minute.toString().padLeft(2, '0')}";
               }
 
               return InkWell(
@@ -126,7 +143,11 @@ class HistoryScreen extends StatelessWidget {
                   Navigator.push(
                     context,
                     MaterialPageRoute(
-                      builder: (_) => HistoryDetailScreen(historyDoc: doc),
+                      builder: (_) => HistoryDetailScreen(
+                        userId: vm.userId,
+                        docId: doc.id,
+                        data: data,
+                      ),
                     ),
                   );
                 },
@@ -198,7 +219,7 @@ class HistoryScreen extends StatelessWidget {
                         ),
                       ),
                       const SizedBox(width: 12),
-                      _buildGradeImage(grade),
+                      buildGradeImage(grade),
                     ],
                   ),
                 ),

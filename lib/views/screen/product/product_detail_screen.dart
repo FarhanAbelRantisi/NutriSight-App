@@ -1,5 +1,32 @@
 import 'package:flutter/material.dart';
 
+class ProductDetailViewModel {
+  final String productName;
+  final String manufacturer;
+  final String imageUrl;
+  final String categoryName;
+  final String grade;
+  final String servingSizeInfo;
+
+  final double? sugar;
+  final double? saturatedFat;
+  final double? sodium;
+
+  ProductDetailViewModel.fromMap(Map<String, dynamic> product)
+      : productName = product['productName'] ?? 'No Name',
+        manufacturer = product['manufacturer'] ?? 'Unknown',
+        imageUrl = product['imageUrl'] ?? '',
+        categoryName = product['categoryName'] ?? 'Unknown Category',
+        grade = (product['grade'] ?? 'N/A').toString(),
+        servingSizeInfo =
+            product['servingSizeInfo'] ?? 'Takaran saji tidak tersedia',
+        sugar = (product['nutrition_per_100g']?['sugar_g'])?.toDouble(),
+        saturatedFat = (product['nutrition_per_100g']?['saturatedFat_g'] ??
+                product['nutrition_per_100g']?['saturated_fat_g'])
+            ?.toDouble(),
+        sodium = (product['nutrition_per_100g']?['sodium_mg'])?.toDouble();
+}
+
 class ProductDetailScreen extends StatelessWidget {
   final Map<String, dynamic> product;
 
@@ -57,20 +84,7 @@ class ProductDetailScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final String productName = product['productName'] ?? 'No Name';
-    final String manufacturer = product['manufacturer'] ?? 'Unknown';
-    final String imageUrl = product['imageUrl'] ?? '';
-    final String categoryName = product['categoryName'] ?? 'Unknown Category';
-    final String grade = (product['grade'] ?? 'N/A').toString();
-    final String servingSizeInfo =
-        product['servingSizeInfo'] ?? 'Takaran saji tidak tersedia';
-
-    final Map<String, dynamic> nutrition =
-        (product['nutrition_per_100g'] ?? {}) as Map<String, dynamic>;
-
-    final sugar = nutrition['sugar_g'];
-    final satFat = nutrition['saturatedFat_g'] ?? nutrition['saturated_fat_g'];
-    final sodium = nutrition['sodium_mg'];
+    final vm = ProductDetailViewModel.fromMap(product);
 
     return Scaffold(
       backgroundColor: Colors.white,
@@ -101,9 +115,9 @@ class ProductDetailScreen extends StatelessWidget {
               ),
               child: ClipRRect(
                 borderRadius: BorderRadius.circular(20),
-                child: imageUrl.isNotEmpty
+                child: vm.imageUrl.isNotEmpty
                     ? Image.network(
-                        imageUrl,
+                        vm.imageUrl,
                         fit: BoxFit.contain,
                         errorBuilder: (_, __, ___) => const Center(
                           child: Icon(Icons.image_not_supported, size: 48),
@@ -125,7 +139,7 @@ class ProductDetailScreen extends StatelessWidget {
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Text(
-                          productName,
+                          vm.productName,
                           style: const TextStyle(
                             fontSize: 18,
                             fontWeight: FontWeight.w700,
@@ -133,7 +147,7 @@ class ProductDetailScreen extends StatelessWidget {
                         ),
                         const SizedBox(height: 4),
                         Text(
-                          manufacturer,
+                          vm.manufacturer,
                           style: TextStyle(
                             fontSize: 13,
                             color: Colors.grey.shade600,
@@ -146,7 +160,7 @@ class ProductDetailScreen extends StatelessWidget {
                             const SizedBox(width: 6),
                             Flexible(
                               child: Text(
-                                categoryName,
+                                vm.categoryName,
                                 style: const TextStyle(fontSize: 13),
                               ),
                             ),
@@ -156,7 +170,7 @@ class ProductDetailScreen extends StatelessWidget {
                     ),
                   ),
                   const SizedBox(width: 16),
-                  _buildGradeLogo(grade),
+                  _buildGradeLogo(vm.grade),
                 ],
               ),
             ),
@@ -182,7 +196,7 @@ class ProductDetailScreen extends StatelessWidget {
                     const SizedBox(width: 12),
                     Expanded(
                       child: Text(
-                        servingSizeInfo,
+                        vm.servingSizeInfo,
                         style: const TextStyle(
                           fontSize: 13,
                           fontWeight: FontWeight.w500,
@@ -223,15 +237,16 @@ class ProductDetailScreen extends StatelessWidget {
                   children: [
                     _buildNutritionRow(
                       label: "Sugar",
-                      value: sugar != null ? "$sugar g" : "-",
+                      value: vm.sugar != null ? "${vm.sugar} g" : "-",
                     ),
                     _buildNutritionRow(
                       label: "Saturated Fat",
-                      value: satFat != null ? "$satFat g" : "-",
+                      value:
+                          vm.saturatedFat != null ? "${vm.saturatedFat} g" : "-",
                     ),
                     _buildNutritionRow(
                       label: "Sodium",
-                      value: sodium != null ? "$sodium mg" : "-",
+                      value: vm.sodium != null ? "${vm.sodium} mg" : "-",
                       showDivider: false,
                     ),
                   ],

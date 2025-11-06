@@ -1,8 +1,8 @@
-import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
-import 'package:google_sign_in/google_sign_in.dart';
-import 'register_screen.dart';
+import 'package:provider/provider.dart';
 import '../../../main_layout.dart';
+import '../../../viewmodel/auth_view_model.dart';
+import 'register_screen.dart';
 
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
@@ -12,97 +12,58 @@ class LoginScreen extends StatefulWidget {
 }
 
 class _LoginScreenState extends State<LoginScreen> {
-  final Color primaryBlue = const Color(0xFF1C69A8);
-  final Color greyText = const Color(0xFFBFBFBF);
-  final Color darkText = const Color(0xFF1D1D1D);
-  final Color textFieldBackground = const Color(0xFFF0F0F0);
+  static const Color primaryBlue = Color(0xFF1C69A8);
+  static const Color greyText = Color(0xFFBFBFBF);
+  static const Color darkText = Color(0xFF1D1D1D);
+  static const Color textFieldBackground = Color(0xFFF0F0F0);
 
   final TextEditingController _emailController = TextEditingController();
   final TextEditingController _passwordController = TextEditingController();
-  bool _isLoading = false;
 
-  Future<void> _signInWithEmailAndPassword() async {
-    if (_emailController.text.isEmpty || _passwordController.text.isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text("Email dan password tidak boleh kosong.")),
-      );
-      return;
-    }
-
-    setState(() {
-      _isLoading = true;
-    });
-
+  Future<void> _handleEmailLogin(AuthViewModel vm) async {
     try {
-      final UserCredential userCredential = await FirebaseAuth.instance.signInWithEmailAndPassword(
-        email: _emailController.text.trim(),
-        password: _passwordController.text.trim(),
+      final cred = await vm.signInWithEmail(
+        _emailController.text,
+        _passwordController.text,
       );
-
-      if (userCredential.user != null && mounted) {
+      if (cred?.user != null && mounted) {
         Navigator.pushAndRemoveUntil(
           context,
-          MaterialPageRoute(builder: (context) => const MainLayout()),
-          (route) => false,
-        );
-      }
-    } on FirebaseAuthException catch (e) {
-      String message = "Terjadi kesalahan.";
-      if (e.code == 'user-not-found') {
-        message = 'Tidak ada pengguna yang ditemukan untuk email tersebut.';
-      } else if (e.code == 'wrong-password') {
-        message = 'Password yang dimasukkan salah.';
-      }
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(message)),
-      );
-    } finally {
-      if (mounted) {
-        setState(() {
-          _isLoading = false;
-        });
-      }
-    }
-  }
-
-  Future<void> _signInWithGoogle() async {
-    setState(() {
-      _isLoading = true;
-    });
-    try {
-      final GoogleSignInAccount? googleUser = await GoogleSignIn().signIn();
-      if (googleUser == null) {
-        setState(() => _isLoading = false);
-        return;
-      }
-
-      final GoogleSignInAuthentication googleAuth = await googleUser.authentication;
-      final OAuthCredential credential = GoogleAuthProvider.credential(
-        accessToken: googleAuth.accessToken,
-        idToken: googleAuth.idToken,
-      );
-
-      final UserCredential userCredential = await FirebaseAuth.instance.signInWithCredential(credential);
-
-      if (userCredential.user != null && mounted) {
-        Navigator.pushAndRemoveUntil(
-          context,
-          MaterialPageRoute(builder: (context) => const MainLayout()),
+          MaterialPageRoute(builder: (_) => const MainLayout()),
           (route) => false,
         );
       }
     } catch (e) {
-      if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(content: Text("Error signing in with Google: $e")),
-          );
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(
+            e.toString().replaceFirst('Exception: ', ''),
+          ),
+        ),
+      );
+    }
+  }
+
+  Future<void> _handleGoogleLogin(AuthViewModel vm) async {
+    try {
+      final cred = await vm.signInWithGoogle();
+      if (cred?.user != null && mounted) {
+        Navigator.pushAndRemoveUntil(
+          context,
+          MaterialPageRoute(builder: (_) => const MainLayout()),
+          (route) => false,
+        );
       }
-    } finally {
-      if (mounted) {
-        setState(() {
-          _isLoading = false;
-        });
-      }
+    } catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(
+            e.toString().replaceFirst('Exception: ', ''),
+          ),
+        ),
+      );
     }
   }
 
@@ -115,6 +76,8 @@ class _LoginScreenState extends State<LoginScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final vm = context.watch<AuthViewModel>();
+
     return Scaffold(
       body: Stack(
         children: [
@@ -127,26 +90,32 @@ class _LoginScreenState extends State<LoginScreen> {
             ),
           ),
           Container(color: Colors.black.withOpacity(0.35)),
-          const SafeArea(
+
+          SafeArea(
             child: Padding(
-              padding: EdgeInsets.symmetric(horizontal: 24.0),
+              padding: const EdgeInsets.symmetric(horizontal: 24.0),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  SizedBox(height: 220),
+                  const SizedBox(height: 100),
                   Text(
                     "Discover\nwhat's inside\nyour food.",
                     style: TextStyle(
-                        color: Colors.white,
-                        fontSize: 40,
-                        fontWeight: FontWeight.bold,
-                        height: 1.2),
+                      color: Colors.white,
+                      fontSize: 40,
+                      fontWeight: FontWeight.bold,
+                      height: 1.2,
+                    ),
                   ),
                   SizedBox(height: 16),
                   Text(
                     "Let NutriSight make you healthier",
-                    style: TextStyle(color: Colors.white, fontSize: 16),
+                    style: TextStyle(
+                      color: Colors.white,
+                      fontSize: 16,
+                    ),
                   ),
+                  SizedBox(height: 16),
                 ],
               ),
             ),
@@ -155,7 +124,10 @@ class _LoginScreenState extends State<LoginScreen> {
           Align(
             alignment: Alignment.bottomCenter,
             child: Container(
-              padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 32),
+              padding: const EdgeInsets.symmetric(
+                horizontal: 24,
+                vertical: 32,
+              ),
               decoration: const BoxDecoration(
                 color: Colors.white,
                 borderRadius: BorderRadius.only(
@@ -169,39 +141,57 @@ class _LoginScreenState extends State<LoginScreen> {
                   children: [
                     _buildTextField(_emailController, "Email"),
                     const SizedBox(height: 16),
-                    _buildTextField(_passwordController, "Password", isObscure: true),
+                    _buildTextField(
+                      _passwordController,
+                      "Password",
+                      isObscure: true,
+                    ),
                     const SizedBox(height: 24),
-                    _isLoading
+                    vm.isLoading
                         ? const CircularProgressIndicator()
                         : SizedBox(
                             width: double.infinity,
                             child: ElevatedButton(
-                              onPressed: _signInWithEmailAndPassword,
+                              onPressed: () => _handleEmailLogin(vm),
                               style: ElevatedButton.styleFrom(
                                 backgroundColor: primaryBlue,
-                                padding: const EdgeInsets.symmetric(vertical: 16),
+                                padding: const EdgeInsets.symmetric(
+                                  vertical: 16,
+                                ),
                                 shape: RoundedRectangleBorder(
                                   borderRadius: BorderRadius.circular(30),
                                 ),
                               ),
-                              child: const Text('Login', style: TextStyle(fontSize: 16, color: Colors.white)),
+                              child: const Text(
+                                'Login',
+                                style: TextStyle(
+                                  fontSize: 16,
+                                  color: Colors.white,
+                                ),
+                              ),
                             ),
                           ),
-
                     const SizedBox(height: 16),
-                    
                     GestureDetector(
-                      onTap: () {
-                        Navigator.push(
-                          context,
-                          MaterialPageRoute(builder: (context) => const RegisterScreen()),
-                        );
-                      },
+                      onTap: vm.isLoading
+                          ? null
+                          : () {
+                              Navigator.push(
+                                context,
+                                MaterialPageRoute(
+                                  builder: (_) =>
+                                      ChangeNotifierProvider.value(
+                                    value: vm,
+                                    child: const RegisterScreen(),
+                                  ),
+                                ),
+                              );
+                            },
                       child: RichText(
-                        text: TextSpan(
+                        text: const TextSpan(
                           style: TextStyle(color: darkText, fontSize: 14),
                           children: [
-                            const TextSpan(text: "Didn't have account? "),
+                            TextSpan(text: "Didn't have account? "),
                             TextSpan(
                               text: 'Register here',
                               style: TextStyle(
@@ -214,56 +204,66 @@ class _LoginScreenState extends State<LoginScreen> {
                       ),
                     ),
                     const SizedBox(height: 24),
-
                     Row(
-                        children: [
-                          Expanded(child: Divider(color: greyText)),
-                          Padding(
-                            padding: const EdgeInsets.symmetric(horizontal: 8.0),
-                            child: Text('OR', style: TextStyle(color: greyText)),
-                          ),
-                          Expanded(child: Divider(color: greyText)),
-                        ],
-                      ),
+                      children: const [
+                        Expanded(child: Divider(color: greyText)),
+                        Padding(
+                          padding: EdgeInsets.symmetric(horizontal: 8.0),
+                          child: Text('OR',
+                              style: TextStyle(color: greyText)),
+                        ),
+                        Expanded(child: Divider(color: greyText)),
+                      ],
+                    ),
                     const SizedBox(height: 24),
-
                     SizedBox(
-                        width: 50,
-                        height: 50,
-                        child: OutlinedButton(
-                          onPressed: _signInWithGoogle,
-                          style: OutlinedButton.styleFrom(
-                            shape: const CircleBorder(),
-                            side: BorderSide(color: greyText),
-                            padding: const EdgeInsets.all(12),
-                          ),
-                          child: Image.asset('assets/google_logo.png', height: 24),
+                      width: 50,
+                      height: 50,
+                      child: OutlinedButton(
+                        onPressed:
+                            vm.isLoading ? null : () => _handleGoogleLogin(vm),
+                        style: OutlinedButton.styleFrom(
+                          shape: const CircleBorder(),
+                          side: const BorderSide(color: greyText),
+                          padding: const EdgeInsets.all(12),
+                        ),
+                        child: Image.asset(
+                          'assets/google_logo.png',
+                          height: 24,
                         ),
                       ),
+                    ),
                   ],
                 ),
               ),
             ),
-          )
+          ),
         ],
       ),
     );
   }
 
-  Widget _buildTextField(TextEditingController controller, String hintText, {bool isObscure = false}) {
+  Widget _buildTextField(
+    TextEditingController controller,
+    String hintText, {
+    bool isObscure = false,
+  }) {
     return TextField(
       controller: controller,
       obscureText: isObscure,
       decoration: InputDecoration(
         hintText: hintText,
-        hintStyle: TextStyle(color: greyText),
+        hintStyle: const TextStyle(color: greyText),
         filled: true,
         fillColor: textFieldBackground,
         border: OutlineInputBorder(
           borderRadius: BorderRadius.circular(30),
           borderSide: BorderSide.none,
         ),
-        contentPadding: const EdgeInsets.symmetric(vertical: 16, horizontal: 20),
+        contentPadding: const EdgeInsets.symmetric(
+          vertical: 16,
+          horizontal: 20,
+        ),
       ),
     );
   }
