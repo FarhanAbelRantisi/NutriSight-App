@@ -3,6 +3,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
+import 'package:nutrisight/views/screen/auth/auth_screen.dart';
 import 'package:provider/provider.dart';
 import '../../../viewmodel/profile_view_model.dart';
 
@@ -457,7 +458,10 @@ class _ProfileViewState extends State<_ProfileView> {
                       if (shouldLogout == true) {
                         await FirebaseAuth.instance.signOut();
                         if (!context.mounted) return;
-                        Navigator.pushNamedAndRemoveUntil(context, '/auth', (route) => false);
+                        Navigator.of(context).pushAndRemoveUntil(
+                          MaterialPageRoute(builder: (_) => AuthScreen()),
+                          (route) => false,
+                        );
                       }
                     },
                     leading: const Icon(Icons.logout, color: Colors.redAccent),
