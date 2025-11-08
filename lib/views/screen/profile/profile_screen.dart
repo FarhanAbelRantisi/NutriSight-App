@@ -259,9 +259,8 @@ class _ProfileViewState extends State<_ProfileView> {
           ),
         ),
         centerTitle: true,
-        backgroundColor: Colors.white,
+        backgroundColor: Colors.grey[50],
         foregroundColor: Colors.black,
-        elevation: 1,
       ),
       body: StreamBuilder<DocumentSnapshot<Map<String, dynamic>>>(
         stream: userStream,

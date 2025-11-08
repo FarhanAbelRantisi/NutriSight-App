@@ -91,9 +91,8 @@ class _HistoryScreenBody extends StatelessWidget {
           ),
         ),
         centerTitle: true,
-        backgroundColor: Colors.white,
+        backgroundColor: Colors.grey[50],
         foregroundColor: Colors.black,
-        elevation: 1,
       ),
       body: StreamBuilder<QuerySnapshot<Map<String, dynamic>>>(
         stream: vm.historyStream,

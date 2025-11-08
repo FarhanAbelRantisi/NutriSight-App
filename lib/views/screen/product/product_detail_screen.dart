@@ -100,7 +100,6 @@ class ProductDetailScreen extends StatelessWidget {
         centerTitle: true,
         backgroundColor: Colors.white,
         foregroundColor: Colors.black,
-        elevation: 1,
       ),
       body: SingleChildScrollView(
         child: Column(
