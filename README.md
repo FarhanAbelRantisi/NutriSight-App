@@ -1,6 +1,6 @@
 # nutrisight
 
-DOWNLOAD APK
+## DOWNLOAD APK
 
 Download pre-built APKs for testing:
 
