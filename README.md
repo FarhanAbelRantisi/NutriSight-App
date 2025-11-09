@@ -1,17 +1,9 @@
 # nutrisight
 
-A new Flutter project.
+DOWNLOAD APK
 
-## Getting Started
+Download pre-built APKs for testing:
 
-This project is a starting point for a Flutter application.
-
-A few resources to get you started if this is your first Flutter project:
-
-- [Lab: Write your first Flutter app](https://docs.flutter.dev/get-started/codelab)
-- [Cookbook: Useful Flutter samples](https://docs.flutter.dev/cookbook)
-
-For help getting started with Flutter development, view the
-[online documentation](https://docs.flutter.dev/), which offers tutorials,
-samples, guidance on mobile development, and a full API reference.
-"# NutriSight-App" 
+**[APK (x86_64)](https://github.com/FarhanAbelRantisi/NutriSight-App/releases/download/v0.1-release-x86_64/app-x86_64-release.apk)**
+**[APK (ARM64)](https://github.com/FarhanAbelRantisi/NutriSight-App/releases/download/v0.1-release-arm64/app-arm64-v8a-release.apk)**
+**[APK (ARM32)](https://github.com/FarhanAbelRantisi/NutriSight-App/releases/download/v0.1-release-arm32/app-armeabi-v7a-release.apk)**
