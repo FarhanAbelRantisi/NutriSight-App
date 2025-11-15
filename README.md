@@ -1,4 +1,4 @@
-<img src="https://github.com/FarhanAbelRantisi/NutriSight-App/issues/1#issue-3628372968" width="300" />
+<img src="https://github.com/user-attachments/assets/2f701ff9-9da2-4e0a-822e-2b2631332a3a" width="1200" />
 
 # 🥗 NutriSight — Smart Nutrition Scanner with Nutri-Grade System
 
